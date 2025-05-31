@@ -152,12 +152,15 @@ class DiT(nn.Module):
         input_size=750,
         patch_size=5,
         in_channels=1,
-        hidden_size=150*4,
+        # hidden_size=150*4,
+        hidden_size=512,
         depth=28,
-        num_heads=16,
+        # num_heads=16,
+        num_heads=8,
         mlp_ratio=4.0,
         class_dropout_prob=0.1,
         learn_sigma=True,
+        num_classes=42
     ):
         super().__init__()
         self.learn_sigma = learn_sigma
@@ -165,6 +168,7 @@ class DiT(nn.Module):
         self.out_channels = in_channels * 2 if learn_sigma else in_channels
         self.patch_size = patch_size
         self.num_heads = num_heads
+        self.label_emb = nn.Embedding(num_classes, hidden_size) # 클래스 임베딩
 
         self.x_embedder = PatchEmbed(input_size, patch_size, in_channels, hidden_size)
         self.t_embedder = TimestepEmbedder(hidden_size)
@@ -228,7 +232,8 @@ class DiT(nn.Module):
         """
         x = self.x_embedder(x) + self.pos_embed  # (B, num_patches, embed_dim)
         t = self.t_embedder(t)                   # (B, embed_dim)
-        y = self.y_embedder(y)                  # (B, embed_dim)
+        # y = self.y_embedder(y)                  # (B, embed_dim)
+        y = self.label_emb(y)                  # (B, embed_dim)
         c = t + y                              # (B, embed_dim)
         for block in self.blocks:
             x = block(x, c)                      # (B, num_patches, embed_dim)
