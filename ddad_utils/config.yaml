@@ -1,0 +1,46 @@
+data:
+  name: ECG  # 데이터셋 이름
+  data_dir: C:/Users/Pro/Desktop/AnomalyDiT-main/AnomalyDiT-main/Dataset  # CSV 및 NPY 파일 위치
+  category: ECG  # 시계열에서는 큰 의미 없음
+  image_size: 1  # 1D 시계열이므로
+  batch_size: 32
+  DA_batch_size: 16
+  test_batch_size: 16
+  mask: False  # 시계열에는 segmentation mask 없음
+  input_channel: 1  # ECG 신호는 1채널 (B, 1, T)
+
+model:
+  DDADS: False  # DDAD 방식 사용 (UNet 대신 DiT)
+  checkpoint_dir: ./checkpoints/ECG
+  checkpoint_name: weights
+  exp_name: ECG_DiT_DDAD
+  feature_extractor: null  # 시계열에는 사용하지 않음
+  learning_rate: 3e-4
+  weight_decay: 0.05
+  epochs: 1000
+  load_chp: 500  # 학습된 모델 불러올 epoch
+  DA_epochs: 4
+  DA_chp: 4
+  v: 0  # feature distance 가중치 (시계열은 픽셀 거리만 사용)
+  w: 2  # DDPM 조건 강조 비율
+  w_DA: 2
+  DLlambda: 0.1
+  trajectory_steps: 1000  # 학습 시 전체 노이즈 스텝 수
+  test_trajectoy_steps: 250  # 테스트 시 denoising 시작 지점
+  test_trajectoy_steps_DA: 250
+  skip: 25
+  skip_DA: 25
+  eta: 1
+  beta_start: 0.0001
+  beta_end: 0.02
+  device: 'cuda'
+  save_model: True
+  num_workers: 2
+  seed: 42
+  noise_schedule: "linear"  # 확산 노이즈 스케줄
+
+metrics:
+  auroc: True
+  pro: False  # segmentation이 없으므로 사용 불가
+  misclassifications: True
+  visualisation: True
