@@ -11,7 +11,6 @@ class DDAD:
     def __init__(self, dit_model, config) -> None:
         self.test_dataset = Dataset_maker(
             root=config.data.data_dir,
-            category=config.data.category,
             config=config,
             is_train=False,
         )
@@ -35,19 +34,16 @@ class DDAD:
 
         with torch.no_grad():
             for x, target, label in self.testloader:
-                x = x.to(self.config.model.device)
-                target = target.to(self.config.model.device)
+                x = x.to(self.config.model.device)               # (B, C, T)
+                target = target.to(self.config.model.device)     # (B, 1, T)
 
-                # 라벨이 이미 정수형 (0=정상, 1=이상)이라면 그대로 사용
+                # label: 정상=0, 이상=1 (정수형)
                 label_tensor = label.to(self.config.model.device)
 
-                # 조건 입력: 첫 번째 채널만 사용
-                degraded_y = x[:, 0:1, :]  # (B, 1, T)
+                # 조건 입력 y는 reconstruction 내부에서 자동 지정되도록
+                x0 = self.reconstruction(x)[-1].detach()         # (B, C, T)
 
-                # 복원 시계열 얻기
-                x0 = self.reconstruction(x, y=degraded_y)[-1].detach()
-
-                # 이상 점수 (평균 절대 오차)
+                # 이상 점수 계산 (MSE 또는 MAE 가능)
                 score = torch.mean(torch.abs(x0 - x), dim=(1, 2))  # (B,)
                 predictions.extend(score.cpu().tolist())
                 labels_list.extend(label_tensor.cpu().tolist())
@@ -56,7 +52,7 @@ class DDAD:
                 forward_list.append(x)
                 reconstructed_list.append(x0)
 
-        # 평가 지표 계산
+        # 성능 평가
         metric = Metric(labels_list, predictions, None, gt_list, self.config)
         metric.optimal_threshold()
 
@@ -69,15 +65,14 @@ class DDAD:
             metric.miscalssified()
         metric.precision_recall_f1()
 
-        # 시각화를 위한 정리
-        reconstructed_list = torch.cat(reconstructed_list, dim=0)
-        forward_list = torch.cat(forward_list, dim=0)
-        gt_list = torch.cat(gt_list, dim=0)
-        pred_scores = torch.tensor(predictions).unsqueeze(1)
-        pred_mask = (pred_scores > metric.threshold).float()
+        # 시각화
+        reconstructed_list = torch.cat(reconstructed_list, dim=0)  # (N, C, T)
+        forward_list = torch.cat(forward_list, dim=0)              # (N, C, T)
+        gt_list = torch.cat(gt_list, dim=0)                        # (N, 1, T)
+        pred_scores = torch.tensor(predictions).unsqueeze(1)      # (N, 1)
+        pred_mask = (pred_scores > metric.threshold).float()      # (N, 1)
 
-        if not os.path.exists('results'):
-            os.mkdir('results')
+        os.makedirs('results', exist_ok=True)
 
         if self.config.metrics.visualisation:
             visualize(

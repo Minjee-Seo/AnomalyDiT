@@ -33,7 +33,11 @@ class Reconstruction:
         :return: 전체 복원 trajectory (최종 복원 결과는 all_xt[-1])
         """
         x_t = torch.randn_like(x).to(self.device)  # 랜덤 노이즈 초기화
-        y = y.to(self.device) if y is not None else None
+
+        # y가 None인 경우 자동으로 첫 번째 채널을 condition으로 사용
+        if y is None:
+            y = x[:, 0:1, :]  # (B, 1, T)
+        y = y.to(self.device).float()
 
         all_xt = [x_t]
 
@@ -41,8 +45,7 @@ class Reconstruction:
             for t in reversed(range(self.diffusion.num_timesteps)):
                 t_batch = torch.full((x.size(0),), t, device=self.device, dtype=torch.long)
 
-                # 조건 입력이 있을 경우 float32로 명시 변환
-                model_kwargs = {"y": y.float()} if y is not None else {}
+                model_kwargs = {"y": y}
 
                 out = self.diffusion.p_sample(
                     self.model,
