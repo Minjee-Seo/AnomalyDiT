@@ -28,7 +28,6 @@ def train(model, diffusion, sampler, dataloader, config):
     prev_time = time()
 
     for epoch in range(config.model.epochs):
-        print(f"\n[Epoch {epoch+1}/{config.model.epochs}]")
         total_loss = 0
 
         for i, batch in enumerate(dataloader):
@@ -70,33 +69,34 @@ def train(model, diffusion, sampler, dataloader, config):
         avg_loss = total_loss / len(dataloader)
         train_losses.append(avg_loss)
 
-        print(f"\nEpoch {epoch+1}: Avg Loss = {avg_loss:.4f}\n")
+        # print(f"\nEpoch {epoch+1}: Avg Loss = {avg_loss:.4f}\n")
 
         # 모델 저장
         if config.model.save_model:
             save_dir = os.path.join(config.model.checkpoint_dir, config.model.exp_name)
             os.makedirs(save_dir, exist_ok=True)
-            save_path = os.path.join(save_dir, f"{config.model.checkpoint_name}_epoch{epoch+1}.pt")
-            torch.save(model.state_dict(), save_path)
-            print(f"모델 저장됨: {save_path}")
+            # save_path = os.path.join(save_dir, f"{config.model.checkpoint_name}_epoch{epoch+1}.pt")
+            # torch.save(model.state_dict(), save_path)
+            # print(f"\n모델 저장됨: {save_path}")
 
             # 최적 모델 따로 저장
             if avg_loss < best_loss:
                 best_loss = avg_loss
                 best_model_path = os.path.join(save_dir, f"{config.model.checkpoint_name}_best.pt")
                 torch.save(model.state_dict(), best_model_path)
-                print(f"최고 성능 모델 갱신 (loss={best_loss:.4f}): {best_model_path}")
+                print(f"\n최고 성능 모델 갱신 (loss={best_loss:.4f}): {best_model_path}\n")
 
         
-        train_results = {'train_loss':train_losses}
-        with open(os.path.join(config.model.checkpoint_dir, config.model.exp_name, "train_losses.csv")) as f:
-            pickle.dump(train_results,f)        
-        print(f'Train results saved in {os.path.join(config.model.checkpoint_dir, config.model.exp_name)}.')
+    train_results = {'train_loss':train_losses}
+    with open(os.path.join(config.model.checkpoint_dir, config.model.exp_name, "train_losses.pickle"), 'wb') as f:
+        pickle.dump(train_results,f)        
+    print(f'Train results saved in {os.path.join(config.model.checkpoint_dir, config.model.exp_name)}.')
 
 
 def main():
     # 1. config.yaml 불러오기
     config = OmegaConf.load("ddad_utils/config.yaml")
+    os.makedirs(os.path.join(config.model.checkpoint_dir, config.model.exp_name), exist_ok=True)
 
     # 2. 디바이스 설정 및 시드 고정
     device = torch.device(config.model.device)
