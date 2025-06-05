@@ -9,14 +9,22 @@ from models import create_diffusion
 from models.timestep_sampler import create_named_schedule_sampler
 from ddad_utils.dataset import Dataset_maker
 from tqdm import tqdm
+from time import time
+from datetime import timedelta
+import pickle
 
 
 def train(model, diffusion, sampler, dataloader, config):
+    train_losses = []
+    
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=config.model.learning_rate)
 
     best_loss = float('inf')
     best_model_path = ""
+
+    total_batches = config.model.epochs * len(dataloader)
+    prev_time = time()
 
     for epoch in range(config.model.epochs):
         print(f"\n[Epoch {epoch+1}/{config.model.epochs}]")
@@ -43,8 +51,25 @@ def train(model, diffusion, sampler, dataloader, config):
 
             total_loss += loss.item()
 
+            batches_done = epoch * len(dataloader) + i + 1
+            batches_left = total_batches - batches_done
+            time_left = timedelta(seconds=batches_laft * (time() - pref_time))
+            prev_time = time()
+
+            sys.stdout.write(
+            "\r[Epoch %d/%d] [Batch %d/%d] [Loss %f] [ETA: %s]" %
+            (epoch+1,
+            config.model.epochs,
+            i+1,
+            len(dataloader),
+            loss.item(),
+            str(time_left)[:-7])
+        )
+
         avg_loss = total_loss / len(dataloader)
-        print(f"Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}")
+        train_losses.append(avg_loss)
+
+        print(f"\nEpoch {epoch+1}: Avg Loss = {avg_loss:.4f}\n")
 
         # 모델 저장
         if config.model.save_model:
@@ -60,6 +85,12 @@ def train(model, diffusion, sampler, dataloader, config):
                 best_model_path = os.path.join(save_dir, f"{config.model.checkpoint_name}_best.pt")
                 torch.save(model.state_dict(), best_model_path)
                 print(f"최고 성능 모델 갱신 (loss={best_loss:.4f}): {best_model_path}")
+
+        
+        train_results = {'train_loss':train_losses}
+        with open(os.path.join(config.model.checkpoint_dir, config.model.exp_name, "train_losses.csv")) as f:
+            pickle.dump(train_results,f)        
+        print(f'Train results saved in {os.path.join(config.model.checkpoint_dir, config.model.exp_name)}.')
 
 
 def main():
@@ -114,6 +145,8 @@ def main():
 
     # 7. 학습 시작
     train(model, diffusion, sampler, train_loader, config)
+
+    print('Training process done.')
 
 
 if __name__ == "__main__":
