@@ -30,7 +30,7 @@ def train(model, diffusion, sampler, dataloader, config):
         print(f"\n[Epoch {epoch+1}/{config.model.epochs}]")
         total_loss = 0
 
-        for i, batch in enumerate(tqdm(dataloader, desc=f"Epoch {epoch+1}", leave=True)):
+        for i, batch in enumerate(dataloader):
             if config.training.use_label:
                 x, _ = batch  # label은 reconstruction에 사용하지 않음
             else:
@@ -53,7 +53,7 @@ def train(model, diffusion, sampler, dataloader, config):
 
             batches_done = epoch * len(dataloader) + i + 1
             batches_left = total_batches - batches_done
-            time_left = timedelta(seconds=batches_laft * (time() - pref_time))
+            time_left = timedelta(seconds=batches_left * (time() - pref_time))
             prev_time = time()
 
             sys.stdout.write(
