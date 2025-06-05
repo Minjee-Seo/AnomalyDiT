@@ -12,6 +12,7 @@ from tqdm import tqdm
 from time import time
 from datetime import timedelta
 import pickle
+import sys
 
 
 def train(model, diffusion, sampler, dataloader, config):
@@ -53,7 +54,7 @@ def train(model, diffusion, sampler, dataloader, config):
 
             batches_done = epoch * len(dataloader) + i + 1
             batches_left = total_batches - batches_done
-            time_left = timedelta(seconds=batches_left * (time() - pref_time))
+            time_left = timedelta(seconds=batches_left * (time() - prev_time))
             prev_time = time()
 
             sys.stdout.write(
