@@ -1,6 +1,6 @@
 data:
   name: ECG  # 데이터셋 이름
-  data_dir: C:/Users/Pro/Desktop/AnomalyDiT-main/AnomalyDiT-main/Dataset  # CSV 및 NPY 파일 위치
+  data_dir: ./Dataset  # CSV 및 NPY 파일 위치
   train_file: ECG_Train_with_normal.csv
   test_file: ECG_Test_with_anomaly.csv
   category: ECG  # 시계열에서는 큰 의미 없음

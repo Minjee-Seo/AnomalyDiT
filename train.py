@@ -30,14 +30,11 @@ def train(model, diffusion, sampler, dataloader, config):
 
             x = x.to(config.model.device)
 
-            # condition y는 input signal의 첫 번째 채널
-            y = x[:, 0:1, :].repeat(1, config.data.input_channel, 1).to(config.model.device)
-
             # diffusion timestep 샘플링
             t, _ = sampler.sample(x.shape[0], config.model.device)
 
             # 모델 학습
-            loss_dict = diffusion.training_losses(model, x, t, model_kwargs={"y": y})
+            loss_dict = diffusion.training_losses(model, x, t, model_kwargs={"y": x})
             loss = loss_dict["loss"].mean()
 
             optimizer.zero_grad()
@@ -67,7 +64,7 @@ def train(model, diffusion, sampler, dataloader, config):
 
 def main():
     # 1. config.yaml 불러오기
-    config = OmegaConf.load("C:/Users/Pro/Desktop/AnomalyDiT-main/AnomalyDiT-main/ddad_utils/config.yaml")
+    config = OmegaConf.load("ddad_utils/config.yaml")
 
     # 2. 디바이스 설정 및 시드 고정
     device = torch.device(config.model.device)
@@ -91,7 +88,6 @@ def main():
         input_size=config.data.seq_len,
         patch_size=5,
         in_channels=config.data.input_channel,
-        num_classes=2  # reconstruction 목적이지만 구조상 필요
     ).to(device)
 
     # 5. pretrained weight 불러오기

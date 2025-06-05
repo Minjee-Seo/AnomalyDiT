@@ -168,7 +168,6 @@ class DiT(nn.Module):
         self.out_channels = in_channels * 2 if learn_sigma else in_channels
         self.patch_size = patch_size
         self.num_heads = num_heads
-        self.label_emb = nn.Embedding(num_classes, hidden_size) # 클래스 임베딩
 
         self.x_embedder = PatchEmbed(input_size, patch_size, in_channels, hidden_size)
         self.t_embedder = TimestepEmbedder(hidden_size)
@@ -232,8 +231,8 @@ class DiT(nn.Module):
         """
         x = self.x_embedder(x) + self.pos_embed  # (B, num_patches, embed_dim)
         t = self.t_embedder(t)                   # (B, embed_dim)
-        # y = self.y_embedder(y)                  # (B, embed_dim)
-        y = self.label_emb(y)                  # (B, embed_dim)
+        y = self.y_embedder(y)                  # (B, embed_dim)
+
         c = t + y                              # (B, embed_dim)
         for block in self.blocks:
             x = block(x, c)                      # (B, num_patches, embed_dim)
