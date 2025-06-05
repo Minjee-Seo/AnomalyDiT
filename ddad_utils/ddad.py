@@ -41,7 +41,9 @@ class DDAD:
                 label_tensor = label.to(self.config.model.device)
 
                 # 조건 입력 y는 reconstruction 내부에서 자동 지정되도록
-                x0 = self.reconstruction(x)[-1].detach()         # (B, C, T)
+                # x0 = self.reconstruction(x)[-1].detach()         # (B, C, T)
+                degraded_y = x[:, 0:1, :]
+                x0 = self.reconstruction(x, y=degraded_y)[-1].detach()
 
                 # 이상 점수 계산 (MSE 또는 MAE 가능)
                 score = torch.mean(torch.abs(x0 - x), dim=(1, 2))  # (B,)
