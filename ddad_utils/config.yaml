@@ -8,7 +8,7 @@ data:
   seq_len: 750
   batch_size: 64
   DA_batch_size: 16
-  test_batch_size: 64
+  test_batch_size: 1
   mask: False  # 시계열에는 segmentation mask 없음
   input_channel: 2  # 다채널 시계열을 위한 채널 수 (예: ch1, ch2)
   num_classes: 2

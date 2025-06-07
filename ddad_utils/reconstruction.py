@@ -4,7 +4,7 @@ import torch
 from models import create_diffusion
 
 # CUDA 디바이스 설정 (멀티 GPU 설정 시 환경 변수 이용 가능)
-os.environ['CUDA_VISIBLE_DEVICES'] = "0,1,2"
+# os.environ['CUDA_VISIBLE_DEVICES'] = "0,1,2"
 
 class Reconstruction:
     """
@@ -34,12 +34,9 @@ class Reconstruction:
         """
         x_t = torch.randn_like(x).to(self.device)  # 랜덤 노이즈 초기화
 
-        # y가 None인 경우 자동으로 첫 번째 채널을 condition으로 사용
-        if y is None:
-            y = x[:, 0:1, :]  # (B, 1, T)
-        y = y.to(self.device).float()
+        
 
-        all_xt = [x_t]
+        # all_xt = [x_t]
 
         with torch.no_grad():
             for t in reversed(range(self.diffusion.num_timesteps)):
@@ -54,6 +51,6 @@ class Reconstruction:
                     model_kwargs=model_kwargs,
                 )
                 x_t = out["sample"]
-                all_xt.append(x_t)
+                # all_xt.append(x_t)
 
-        return all_xt  # 최종 복원 결과는 all_xt[-1]
+        return x_t  # 최종 복원 결과는 all_xt[-1]

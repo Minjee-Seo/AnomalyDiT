@@ -15,11 +15,11 @@ import numpy as np
 from sklearn.metrics import roc_auc_score, roc_curve, precision_recall_fscore_support
 
 class Metric:
-    def __init__(self, labels_list, predictions, anomaly_map_list, gt_list, config):
+    def __init__(self, labels_list, predictions, config):
         self.labels_list = labels_list  # [0, 1, 1, 0, ...]
         self.predictions = predictions  # [score1, score2, ...]
         self.config = config
-        self.threshold = 0.5
+        self.threshold = 0.5 # should be checked?
 
     def image_auroc(self):
         return roc_auc_score(self.labels_list, self.predictions)

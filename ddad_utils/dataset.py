@@ -41,7 +41,7 @@ class Dataset_maker(Dataset):
 
     def __getitem__(self, idx):
         x = torch.tensor(self.X[idx], dtype=torch.float32)
-        label = torch.tensor(self.labels[idx], dtype=torch.long)
+        label = torch.tensor(self.labels[idx], dtype=torch.long).unsqueeze(0)
 
         if self.is_train:
             return x, label
