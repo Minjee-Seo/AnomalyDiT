@@ -147,8 +147,5 @@ def main():
     # 7. 학습 시작
     train(model, diffusion, sampler, train_loader, config)
 
-    print('Training process done.')
-
-
 if __name__ == "__main__":
     main()
