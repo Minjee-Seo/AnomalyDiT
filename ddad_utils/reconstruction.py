@@ -1,6 +1,7 @@
 import os
 from typing import Any
 import torch
+import sys
 from models import create_diffusion
 
 # CUDA 디바이스 설정 (멀티 GPU 설정 시 환경 변수 이용 가능)
@@ -40,6 +41,7 @@ class Reconstruction:
 
         with torch.no_grad():
             for t in reversed(range(self.diffusion.num_timesteps)):
+                # sys.stdout.write('\rT=%d/%d'%(self.diffusion.num_timesteps-t, self.diffusion.num_timesteps))
                 t_batch = torch.full((x.size(0),), t, device=self.device, dtype=torch.long)
 
                 model_kwargs = {"y": y}

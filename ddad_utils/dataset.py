@@ -5,9 +5,10 @@ import torch
 from torch.utils.data import Dataset
 
 class Dataset_maker(Dataset):
-    def __init__(self, root, config, is_train=True):
+    def __init__(self, root, config, is_train=True, normalize=False):
         self.config = config
         self.is_train = is_train
+        self.normalize = normalize
 
         if is_train:
             # 학습 데이터 로드
@@ -20,6 +21,10 @@ class Dataset_maker(Dataset):
         else:
             # 테스트 데이터 로드
             df = pd.read_csv(os.path.join(root, "ECG_Test_with_anomaly.csv"))
+            
+            # Reducing test data
+            df = df[df['label']==41]
+
             df = df.apply(pd.to_numeric, errors='coerce').fillna(0)
 
             self.labels = df["label"].astype(int).values
@@ -36,6 +41,7 @@ class Dataset_maker(Dataset):
         self.seq_len = config.data.seq_len
         self.X = self.X.reshape(-1, self.channels, self.seq_len)
 
+
     def __len__(self):
         return len(self.X)
 
@@ -43,8 +49,17 @@ class Dataset_maker(Dataset):
         x = torch.tensor(self.X[idx], dtype=torch.float32)
         label = torch.tensor(self.labels[idx], dtype=torch.long).unsqueeze(0)
 
+        if self.normalize:
+            x = self._signorm(x)
+
         if self.is_train:
             return x, label
         else:
-            target = torch.tensor(self.anomaly_mask[idx], dtype=torch.float32).unsqueeze(0)  # (1, T)
+            target = torch.tensor(self.anomaly_mask[idx], dtype=torch.float32).unsqueeze(0) 
             return x, target, label
+
+    def _signorm(self, x):
+        min_val = x.min()
+        max_val = x.max()
+
+        return 2 * (x - min_val) / (max_val - min_val) - 1
