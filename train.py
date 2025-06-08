@@ -9,20 +9,28 @@ from models import create_diffusion
 from models.timestep_sampler import create_named_schedule_sampler
 from ddad_utils.dataset import Dataset_maker
 from tqdm import tqdm
+from time import time
+from datetime import timedelta
+import pickle
+import sys
 
 
 def train(model, diffusion, sampler, dataloader, config):
+    train_losses = []
+    
     model.train()
     optimizer = optim.Adam(model.parameters(), lr=config.model.learning_rate)
 
     best_loss = float('inf')
     best_model_path = ""
 
+    total_batches = config.model.epochs * len(dataloader)
+    prev_time = time()
+
     for epoch in range(config.model.epochs):
-        print(f"\n[Epoch {epoch+1}/{config.model.epochs}]")
         total_loss = 0
 
-        for i, batch in enumerate(tqdm(dataloader, desc=f"Epoch {epoch+1}", leave=True)):
+        for i, batch in enumerate(dataloader):
             if config.training.use_label:
                 x, _ = batch  # label은 reconstruction에 사용하지 않음
             else:
@@ -30,14 +38,11 @@ def train(model, diffusion, sampler, dataloader, config):
 
             x = x.to(config.model.device)
 
-            # condition y는 input signal의 첫 번째 채널
-            y = x[:, 0:1, :].repeat(1, config.data.input_channel, 1).to(config.model.device)
-
             # diffusion timestep 샘플링
             t, _ = sampler.sample(x.shape[0], config.model.device)
 
             # 모델 학습
-            loss_dict = diffusion.training_losses(model, x, t, model_kwargs={"y": y})
+            loss_dict = diffusion.training_losses(model, x, t, model_kwargs={"y": x})
             loss = loss_dict["loss"].mean()
 
             optimizer.zero_grad()
@@ -46,28 +51,52 @@ def train(model, diffusion, sampler, dataloader, config):
 
             total_loss += loss.item()
 
+            batches_done = epoch * len(dataloader) + i + 1
+            batches_left = total_batches - batches_done
+            time_left = timedelta(seconds=batches_left * (time() - prev_time))
+            prev_time = time()
+
+            sys.stdout.write(
+            "\r[Epoch %d/%d] [Batch %d/%d] [Loss %f] [ETA: %s]" %
+            (epoch+1,
+            config.model.epochs,
+            i+1,
+            len(dataloader),
+            loss.item(),
+            str(time_left)[:-7])
+        )
+
         avg_loss = total_loss / len(dataloader)
-        print(f"Epoch {epoch+1}: Avg Loss = {avg_loss:.4f}")
+        train_losses.append(avg_loss)
+
+        # print(f"\nEpoch {epoch+1}: Avg Loss = {avg_loss:.4f}\n")
 
         # 모델 저장
         if config.model.save_model:
             save_dir = os.path.join(config.model.checkpoint_dir, config.model.exp_name)
             os.makedirs(save_dir, exist_ok=True)
-            save_path = os.path.join(save_dir, f"{config.model.checkpoint_name}_epoch{epoch+1}.pt")
-            torch.save(model.state_dict(), save_path)
-            print(f"모델 저장됨: {save_path}")
+            # save_path = os.path.join(save_dir, f"{config.model.checkpoint_name}_epoch{epoch+1}.pt")
+            # torch.save(model.state_dict(), save_path)
+            # print(f"\n모델 저장됨: {save_path}")
 
             # 최적 모델 따로 저장
             if avg_loss < best_loss:
                 best_loss = avg_loss
                 best_model_path = os.path.join(save_dir, f"{config.model.checkpoint_name}_best.pt")
                 torch.save(model.state_dict(), best_model_path)
-                print(f"최고 성능 모델 갱신 (loss={best_loss:.4f}): {best_model_path}")
+                print(f"\n최고 성능 모델 갱신 (loss={best_loss:.4f}): {best_model_path}\n")
+
+        
+    train_results = {'train_loss':train_losses}
+    with open(os.path.join(config.model.checkpoint_dir, config.model.exp_name, "train_losses.pickle"), 'wb') as f:
+        pickle.dump(train_results,f)        
+    print(f'Train results saved in {os.path.join(config.model.checkpoint_dir, config.model.exp_name)}.')
 
 
 def main():
     # 1. config.yaml 불러오기
-    config = OmegaConf.load("C:/Users/Pro/Desktop/AnomalyDiT-main/AnomalyDiT-main/ddad_utils/config.yaml")
+    config = OmegaConf.load("ddad_utils/config.yaml")
+    os.makedirs(os.path.join(config.model.checkpoint_dir, config.model.exp_name), exist_ok=True)
 
     # 2. 디바이스 설정 및 시드 고정
     device = torch.device(config.model.device)
@@ -91,7 +120,6 @@ def main():
         input_size=config.data.seq_len,
         patch_size=5,
         in_channels=config.data.input_channel,
-        num_classes=2  # reconstruction 목적이지만 구조상 필요
     ).to(device)
 
     # 5. pretrained weight 불러오기
@@ -118,7 +146,6 @@ def main():
 
     # 7. 학습 시작
     train(model, diffusion, sampler, train_loader, config)
-
 
 if __name__ == "__main__":
     main()
