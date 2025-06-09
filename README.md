@@ -17,4 +17,4 @@ Clone this repository: `git clone https://github.com/Minjee-Seo/AnomalyDiT.git`
 3. Run `python test.py` for sampling and evaluation.
 
 ## Contact
-For any queries, please reach out to [Minjee Seo](mailto:islandz@yonsei.ac.kr) and [Seohyeon Jung](mailto:jsh1021902@naver.com).
+For any queries, please reach out to [Minjee Seo](mailto:islandz@yonsei.ac.kr) and [Seohyeon Jeong](mailto:jsh1021902@naver.com).
